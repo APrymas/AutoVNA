@@ -966,10 +966,10 @@ class RSLab:
         if entry:
             self.history.append(entry)
         self.update_plots()
+        elapsed = time.monotonic() - started
         metrics = self.current_metrics()
         if self.auto_window and self.auto_window.winfo_exists():
-            self.auto_window.on_measurement(metrics)
-        elapsed = time.monotonic() - started
+            self.auto_window.on_measurement(metrics, elapsed, started)
         cal = self.tr("calibrated") if self.calibration else self.tr("uncalibrated")
         self.status_var.set(self.tr("status_measurement_summary").format(points=len(self.freq), start=f"{self.freq[0]/1e6:.6g}", stop=f"{self.freq[-1]/1e6:.6g}", elapsed=f"{elapsed:.2f}", calibration=cal))
         if completion_callback:
@@ -1514,7 +1514,6 @@ class RSLab:
             base_path=path, formats=selected_formats, frequency_hz=self.freq.copy(), **kwargs,
             markers=dict(self.markers), fields=fields, z0=float(self.z0_var.get()),
             tdr_data={key: (value.copy() if hasattr(value, "copy") else value) for key, value in self.tdr_data.items()} if self.tdr_data else None,
-            tr=self.tr,
         )
 
     def _automatic_snapshot(
@@ -1567,6 +1566,8 @@ class RSLab:
             self.automation_data_to_mem,
             self.automation_set_range,
             self.tr,
+            measurement_callback=self.automation_request_measurement,
+            timed_save_callback=self.automation_measure_and_save,
         )
 
     def automation_data_to_mem(self) -> str:
@@ -1578,6 +1579,159 @@ class RSLab:
         if not self.connected or len(self.freq) < 2: raise RuntimeError(self.tr("error_connect_first"))
         if start_hz <= 0 or stop_hz <= start_hz: raise ValueError(self.tr("stop_must_exceed_start"))
         self.set_range(start_hz, stop_hz, len(self.freq), completion_callback, failure_callback)
+
+    def automation_request_measurement(self, started_callback, completion_callback, failure_callback) -> None:
+        deadline = time.monotonic() + 10.0
+
+        def attempt() -> None:
+            if not self.connected:
+                failure_callback(RuntimeError(self.tr("error_device_not_connected")))
+                return
+            if self.measurement_pending or self.device_busy or self.worker_busy:
+                if time.monotonic() >= deadline:
+                    failure_callback(RuntimeError(self.tr("status_device_busy", "Device is busy.")))
+                    return
+                self.root.after(5, attempt)
+                return
+            started_mono = time.monotonic()
+            started_wall = datetime.now()
+            started_callback(started_mono, started_wall)
+
+            def completed() -> None:
+                completion_callback(max(0.0, time.monotonic() - started_mono))
+
+            self.read_once(False, completed, failure_callback)
+
+        attempt()
+
+    def automation_measure_and_save(
+        self,
+        index: int,
+        filename_stem: str,
+        folder: Path,
+        fields: dict[str, bool],
+        formats: dict[str, bool],
+        planned_mono: float,
+        planned_wall: datetime,
+        completion_callback,
+        failure_callback,
+    ) -> None:
+        if not self.connected:
+            failure_callback(RuntimeError(self.tr("error_device_not_connected")))
+            return
+        if self.measurement_pending or self.worker_busy or self.device_busy:
+            deadline = time.monotonic() + 10.0
+
+            def wait_until_ready() -> None:
+                if not self.connected:
+                    failure_callback(RuntimeError(self.tr("error_device_not_connected")))
+                    return
+                if self.measurement_pending or self.worker_busy or self.device_busy:
+                    if time.monotonic() >= deadline:
+                        failure_callback(RuntimeError(self.tr("status_device_busy", "Device is busy.")))
+                        return
+                    self.root.after(5, wait_until_ready)
+                    return
+                self.automation_measure_and_save(
+                    index,
+                    filename_stem,
+                    folder,
+                    fields,
+                    formats,
+                    planned_mono,
+                    planned_wall,
+                    completion_callback,
+                    failure_callback,
+                )
+
+            wait_until_ready()
+            return
+        enabled = (
+            self.enable_s11_var.get(),
+            self.enable_s21_var.get(),
+            self.enable_s12_var.get(),
+            self.enable_s22_var.get(),
+        )
+        if not any(enabled):
+            failure_callback(RuntimeError(self.tr("error_enable_sparameter")))
+            return
+        folder = Path(folder).expanduser()
+        folder.mkdir(parents=True, exist_ok=True)
+        fields_copy = dict(fields)
+        fields_copy["tdr"] = False
+        formats_copy = dict(formats)
+        formats_copy["csv"] = True
+        markers = dict(self.markers)
+        z0 = float(self.z0_var.get())
+        memories = {}
+        for name in ("s11", "s21", "s12", "s22"):
+            memory = getattr(self, f"mem_{name}")
+            memories[name] = None if memory is None else memory.copy()
+
+        def work():
+            measurement = self.vna.read_measurement(*enabled)
+            f, raw11, raw21, raw12, raw22 = measurement
+            frequency = np.asarray(f, dtype=float)
+            traces = {
+                "s11": None if raw11 is None else np.asarray(raw11, dtype=complex),
+                "s21": None if raw21 is None else np.asarray(raw21, dtype=complex),
+                "s12": None if raw12 is None else np.asarray(raw12, dtype=complex),
+                "s22": None if raw22 is None else np.asarray(raw22, dtype=complex),
+            }
+            if len(frequency) < 2:
+                raise RuntimeError(self.tr("no_current_measurement"))
+            stem = filename_stem
+            suffix = 0
+            while True:
+                candidate_stem = stem if suffix == 0 else f"{stem}_{suffix:03d}"
+                candidate_csv = folder / f"{candidate_stem}.csv"
+                if not candidate_csv.exists():
+                    break
+                suffix += 1
+            written = save_measurement_files(
+                base_path=folder / candidate_stem,
+                formats=formats_copy,
+                frequency_hz=frequency,
+                s11=traces["s11"],
+                s21=traces["s21"],
+                s12=traces["s12"],
+                s22=traces["s22"],
+                mem_s11=memories["s11"],
+                mem_s21=memories["s21"],
+                mem_s12=memories["s12"],
+                mem_s22=memories["s22"],
+                markers=markers,
+                fields=fields_copy,
+                z0=z0,
+                tdr_data=None,
+            )
+            csv_written = [path for path in written if Path(path).suffix.lower() == ".csv" and Path(path).exists()]
+            if not csv_written:
+                raise RuntimeError("Nie zapisano pliku CSV pomiaru.")
+            return {
+                "index": index,
+                "name": candidate_stem,
+                "paths": [Path(path) for path in written],
+                "measurement": (frequency, traces["s11"], traces["s21"], traces["s12"], traces["s22"]),
+            }
+
+        def ok(result) -> None:
+            frequency, raw11, raw21, raw12, raw22 = result["measurement"]
+            self.freq = np.asarray(frequency, float)
+            for name, raw in (("s11", raw11), ("s21", raw21), ("s12", raw12), ("s22", raw22)):
+                values = np.asarray(raw, complex) if raw is not None else np.array([], complex)
+                setattr(self, f"raw_{name}", values)
+                setattr(self, name, values.copy())
+            entry = {name: getattr(self, name).copy() for name in ("s11", "s21", "s12", "s22") if len(getattr(self, name)) == len(self.freq)}
+            if entry:
+                self.history.append(entry)
+            self.update_plots()
+            completion_callback(result)
+
+        def failed(exception) -> None:
+            failure_callback(exception)
+
+        self._submit_device_task(work, ok, failed, self.tr("task_measurement_read"))
 
     def reference_options(self) -> list[tuple[str, str]]:
         options = [("current", self.tr("current_trace_reference", "Aktualne Data → Mem"))]

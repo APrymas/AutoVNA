@@ -7,7 +7,7 @@ import subprocess
 import threading
 import time
 import tkinter as tk
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from typing import Any, Callable
@@ -147,6 +147,8 @@ class AutomationWindow(tk.Toplevel):
         data_mem_callback: Callable[[], str],
         range_callback: Callable[[float, float, Callable[[], None], Callable[[Exception], None]], None],
         translator=None,
+        measurement_callback=None,
+        timed_save_callback=None,
     ) -> None:
         super().__init__(parent)
         self.tr = translator
@@ -162,6 +164,8 @@ class AutomationWindow(tk.Toplevel):
         self.reference_callback = reference_callback
         self.data_mem_callback = data_mem_callback
         self.range_callback = range_callback
+        self.measurement_callback = measurement_callback
+        self.timed_save_callback = timed_save_callback
         self.active = False
         self.process: subprocess.Popen | None = None
         self.after_id: str | None = None
@@ -181,6 +185,16 @@ class AutomationWindow(tk.Toplevel):
         self.range_change_active = False
         self.range_data_mem_pending = False
         self.queued_python_events: list[tuple[int, str | None, dict[str, bool] | None, dict[str, bool] | None]] = []
+        self.series_start_mono: float | None = None
+        self.series_start_wall: datetime | None = None
+        self.time_measurement_active = False
+        self.pending_time_index: int | None = None
+        self.pending_time_target_mono: float | None = None
+        self.pending_time_target_wall: datetime | None = None
+        self.pending_time_started_mono: float | None = None
+        self.pending_time_started_wall: datetime | None = None
+        self.last_saved_paths: list[Path] = []
+        self.last_saved_name = ""
         self.ui_queue: queue.Queue = queue.Queue()
         self.closing = False
         self.count_var = tk.IntVar(value=1)
@@ -296,32 +310,26 @@ def main():
         time.sleep(2)
         ser.reset_input_buffer()
 
-        # Move to the start position
         move(ser, "G28 X Y")
         send_gcode(ser, "G90")
         move(ser, "G1 X50 Y75 Z0")
 
-        # Save the current sweep result into reference memory
         print("nanoDataMem", flush=True)
 
         measurement_number = 1
 
         for position, x in enumerate(POSITIONS_X, start=1):
-            # Move the actuator to the selected position
             move(ser, f"G1 X{x}")
             time.sleep(2)
 
-            # Lower the actuator
             move(ser, "G1 Z-25")
             time.sleep(9)
 
             filename = f"position{position:02d}"
 
-            # Select the data saved by the next nanoOK command
             print("nanoCSV-s11-s21-zs11", flush=True)
             print("nanoS1P-s11", flush=True)
 
-            # Save the fully acquired sweep
             print(
                 f"nanoOK_{measurement_number}|name={filename}",
                 flush=True,
@@ -330,7 +338,6 @@ def main():
             time.sleep(2)
             move(ser, "G1 Z0")
 
-        # Return to the start position
         move(ser, "G1 Z0")
         move(ser, "G28 X Y")
 
@@ -615,6 +622,8 @@ if __name__ == "__main__":
         try:
             folder = Path(self.folder_var.get()).expanduser()
             folder.mkdir(parents=True, exist_ok=True)
+            if mode in {"time", "threshold"} and "csv" in self.format_vars:
+                self.format_vars["csv"].set(True)
             formats = {key: variable.get() for key, variable in self.format_vars.items()}
             if mode != "python" and not any(formats.values()):
                 raise ValueError
@@ -628,6 +637,11 @@ if __name__ == "__main__":
             duration_minutes = float(self.duration_minutes_var.get())
             if mode == "time" and (interval <= 0 or duration_minutes < 0):
                 raise ValueError
+            if mode == "time" and self.measurement_callback is None and self.timed_save_callback is None:
+                raise RuntimeError("Brak funkcji wykonującej nowy pomiar VNA. Podmień także gui/main_window.py.")
+        except RuntimeError as exception:
+            messagebox.showerror(self._t("error", "Błąd"), str(exception), parent=self)
+            return
         except Exception:
             messagebox.showerror(self._t("error", "Błąd"), self._t("auto_invalid_settings", "Sprawdź ustawienia, formaty i folder."), parent=self)
             return
@@ -638,6 +652,16 @@ if __name__ == "__main__":
         self.threshold_hits = 0
         self.threshold_armed = True
         self.last_trigger_time = 0.0
+        self.series_start_mono = time.monotonic()
+        self.series_start_wall = datetime.now()
+        self.time_measurement_active = False
+        self.pending_time_index = None
+        self.pending_time_target_mono = None
+        self.pending_time_target_wall = None
+        self.pending_time_started_mono = None
+        self.pending_time_started_wall = None
+        self.last_saved_paths = []
+        self.last_saved_name = ""
         self.pending_fields_override = None
         self.pending_formats_override = None
         self.pending_range_start_hz = None
@@ -652,9 +676,9 @@ if __name__ == "__main__":
             if duration_minutes > 0:
                 duration_seconds = duration_minutes * 60.0
                 expected_seconds = min(seconds_by_count, duration_seconds)
-                self.deadline_monotonic = time.monotonic() + duration_seconds
+                self.deadline_monotonic = self.series_start_mono + duration_seconds
                 self.deadline_after_id = self.after(max(1, int(duration_seconds * 1000)), self._deadline_callback)
-            self.expected_finish_wall = datetime.fromtimestamp(datetime.now().timestamp() + expected_seconds)
+            self.expected_finish_wall = self.series_start_wall + timedelta(seconds=expected_seconds)
             finish_text = " | " + self._t("estimated_finish", "Przewidywane zakończenie: {time}").format(time=self.expected_finish_wall.strftime("%Y-%m-%d %H:%M:%S"))
         if mode == "python":
             self.state_var.set(f"{self._t('series_active', 'Seria aktywna')}: 0")
@@ -662,20 +686,134 @@ if __name__ == "__main__":
             self.state_var.set(f"{self._t('series_active', 'Seria aktywna')}: 0/{count}{finish_text}")
         self.status_callback(self._t("series_started", "Uruchomiono automatyczną serię pomiarową."))
         if mode == "time":
-            self._time_tick()
+            self._schedule_time_tick()
         elif mode == "python":
             self._start_python()
 
-    def _time_tick(self) -> None:
+    def _schedule_time_tick(self) -> None:
         if not self.active or self.mode_var.get() != "time":
             return
         if self._deadline_expired():
             self._deadline_callback()
             return
-        self._trigger(len(self.saved_indices))
-        if self.active:
-            delay = max(0.05, float(self.interval_var.get()))
-            self.after_id = self.after(int(delay * 1000), self._time_tick)
+        index = len(self.saved_indices)
+        if index >= int(self.count_var.get()):
+            self._finish("count")
+            return
+        if self.series_start_mono is None:
+            self.series_start_mono = time.monotonic()
+        interval = max(0.05, float(self.interval_var.get()))
+        target_mono = self.series_start_mono + index * interval
+        delay_s = max(0.0, target_mono - time.monotonic())
+        self.after_id = self.after(max(1, int(delay_s * 1000.0)), self._time_tick)
+
+    def _time_tick(self) -> None:
+        self.after_id = None
+        if not self.active or self.mode_var.get() != "time" or self.time_measurement_active:
+            return
+        if self._deadline_expired():
+            self._deadline_callback()
+            return
+        index = len(self.saved_indices)
+        if index >= int(self.count_var.get()):
+            self._finish("count")
+            return
+        interval = max(0.05, float(self.interval_var.get()))
+        base_mono = self.series_start_mono if self.series_start_mono is not None else time.monotonic()
+        base_wall = self.series_start_wall if self.series_start_wall is not None else datetime.now()
+        target_mono = base_mono + index * interval
+        target_wall = base_wall + timedelta(seconds=index * interval)
+        now = time.monotonic()
+        if now + 0.0005 < target_mono:
+            self.after_id = self.after(max(1, int((target_mono - now) * 1000.0)), self._time_tick)
+            return
+        self.pending_time_index = index
+        self.pending_time_target_mono = target_mono
+        self.pending_time_target_wall = target_wall
+        self.pending_time_started_mono = None
+        self.pending_time_started_wall = None
+        self.time_measurement_active = True
+        if self.timed_save_callback is not None:
+            fields = {key: variable.get() for key, variable in self.field_vars.items()}
+            formats = {key: variable.get() for key, variable in self.format_vars.items()}
+            formats = dict(formats)
+            formats["csv"] = True
+            folder = Path(self.folder_var.get()).expanduser()
+            filename_stem = self._format_name(index)
+            try:
+                self.timed_save_callback(
+                    index,
+                    filename_stem,
+                    folder,
+                    fields,
+                    formats,
+                    target_mono,
+                    target_wall,
+                    self._time_atomic_completed,
+                    self._time_measurement_failed,
+                )
+            except Exception as exception:
+                self._time_measurement_failed(exception)
+            return
+        if self.measurement_callback is None:
+            self._time_measurement_failed(RuntimeError("Brak funkcji wykonującej nowy pomiar VNA."))
+            return
+        try:
+            self.measurement_callback(self._time_measurement_started, self._time_measurement_completed, self._time_measurement_failed)
+        except Exception as exception:
+            self._time_measurement_failed(exception)
+
+    def _time_atomic_completed(self, result: dict[str, Any]) -> None:
+        if not self.active or self.mode_var.get() != "time":
+            self.time_measurement_active = False
+            return
+        index = int(result.get("index", self.pending_time_index if self.pending_time_index is not None else len(self.saved_indices)))
+        paths = [Path(path) for path in result.get("paths", [])]
+        csv_paths = [path for path in paths if path.suffix.lower() == ".csv" and path.exists()]
+        if not csv_paths:
+            self.time_measurement_active = False
+            self._time_measurement_failed(RuntimeError("Nie zapisano pliku CSV pomiaru."))
+            return
+        name = str(result.get("name", self._format_name(index)))
+        self.last_saved_name = name
+        self.last_saved_paths = list(paths)
+        self.saved_indices.add(index)
+        self.saved_files.extend(path for path in paths if path not in self.saved_files)
+        count = int(self.count_var.get())
+        self.state_var.set(f"{self._t('series_active', 'Seria aktywna')}: {len(self.saved_indices)}/{count} | {self._t('last_index', 'ostatni indeks')}: {index}")
+        self.time_measurement_active = False
+        self.status_callback(self._t("auto_index_saved", "Zapisano automatyczny pomiar {index}: {name}").format(index=index, name=name))
+        if len(self.saved_indices) >= count:
+            self._finish("count")
+            return
+        self._schedule_time_tick()
+
+    def _time_measurement_started(self, started_mono: float, started_wall: datetime) -> None:
+        self.pending_time_started_mono = started_mono
+        self.pending_time_started_wall = started_wall
+
+    def _time_measurement_completed(self, read_elapsed_s: float) -> None:
+        if not self.active or self.mode_var.get() != "time":
+            self.time_measurement_active = False
+            return
+        index = self.pending_time_index if self.pending_time_index is not None else len(self.saved_indices)
+        ok = self._trigger(index, defer_finish=True)
+        self.time_measurement_active = False
+        if not ok:
+            self._finish("save_error")
+            return
+        if len(self.saved_indices) >= int(self.count_var.get()):
+            self._finish("count")
+            return
+        self._schedule_time_tick()
+
+    def _time_measurement_failed(self, exception: Exception) -> None:
+        if not self.time_measurement_active and not self.active:
+            return
+        index = self.pending_time_index if self.pending_time_index is not None else len(self.saved_indices)
+        self.time_measurement_active = False
+        self.status_callback(self._t("status_auto_save_error", "Błąd automatycznego zapisu {index}: {error}").format(index=index, error=exception))
+        self._finish("measurement_error")
 
     def _start_python(self) -> None:
         code = self.code_text.get("1.0", "end-1c")
@@ -842,7 +980,7 @@ if __name__ == "__main__":
             return
         self._finish("process" if return_code == 0 else f"process_error_{return_code}")
 
-    def on_measurement(self, metrics: dict[str, float]) -> None:
+    def on_measurement(self, metrics: dict[str, float], read_elapsed_s: float | None = None, measurement_started_mono: float | None = None) -> None:
         if not self.active or self.mode_var.get() != "threshold":
             return
         if self._deadline_expired():
@@ -864,11 +1002,20 @@ if __name__ == "__main__":
             return
         self.threshold_hits = self.threshold_hits + 1 if condition else 0
         now = time.monotonic()
-        if self.threshold_hits >= max(1, int(self.consecutive_var.get())) and now - self.last_trigger_time >= max(0.0, float(self.min_interval_var.get())):
-            self.last_trigger_time = now
-            self.threshold_hits = 0
-            self.threshold_armed = False
-            self._trigger(len(self.saved_indices))
+        if self.threshold_hits < max(1, int(self.consecutive_var.get())):
+            return
+        if now - self.last_trigger_time < max(0.0, float(self.min_interval_var.get())):
+            return
+        self.last_trigger_time = now
+        self.threshold_hits = 0
+        self.threshold_armed = False
+        index = len(self.saved_indices)
+        ok = self._trigger(index, defer_finish=True)
+        if not ok:
+            self._finish("save_error")
+            return
+        if len(self.saved_indices) >= int(self.count_var.get()):
+            self._finish("count")
 
     def _trigger(
         self,
@@ -876,6 +1023,7 @@ if __name__ == "__main__":
         controller_name: str | None = None,
         fields_override: dict[str, bool] | None = None,
         formats_override: dict[str, bool] | None = None,
+        defer_finish: bool = False,
     ) -> bool:
         mode = self.mode_var.get()
         if self._deadline_expired():
@@ -887,6 +1035,9 @@ if __name__ == "__main__":
             return False
         fields = fields_override or {key: variable.get() for key, variable in self.field_vars.items()}
         formats = formats_override or {key: variable.get() for key, variable in self.format_vars.items()}
+        if mode in {"time", "threshold"}:
+            formats = dict(formats)
+            formats["csv"] = True
         if not any(formats.values()):
             self.status_callback(self._t("status_auto_save_no_format", "Błąd automatycznego zapisu {index}: nie wybrano formatu.").format(index=index))
             return False
@@ -894,12 +1045,16 @@ if __name__ == "__main__":
             fields = dict(fields)
             fields["tdr"] = False
         folder = Path(self.folder_var.get()).expanduser()
+        self.last_saved_paths = []
+        self.last_saved_name = ""
         try:
             filename_stem = self._format_name(index, controller_name)
             paths = self.snapshot_callback(index, filename_stem, folder, fields, formats)
         except Exception as exception:
             self.status_callback(self._t("status_auto_save_error", "Błąd automatycznego zapisu {index}: {error}").format(index=index, error=exception))
             return False
+        self.last_saved_name = filename_stem
+        self.last_saved_paths = list(paths)
         self.saved_indices.add(index)
         self.saved_files.extend(paths)
         if mode == "python":
@@ -907,7 +1062,7 @@ if __name__ == "__main__":
         else:
             count = int(self.count_var.get())
             self.state_var.set(f"{self._t('series_active', 'Seria aktywna')}: {len(self.saved_indices)}/{count} | {self._t('last_index', 'ostatni indeks')}: {index}")
-            if len(self.saved_indices) >= count:
+            if len(self.saved_indices) >= count and not defer_finish:
                 self._finish("count")
         return True
 
