@@ -1,16 +1,18 @@
 # AutoVNA
 
+[English version](README.md)
+
 **AutoVNA** jest wspólnym pakietem dwóch aplikacji desktopowych przeznaczonych do obsługi wektorowych analizatorów sieci:
 
-- **Auto NanoVNA** — obsługa analizatorów NanoVNA przez USB i port COM;
-- **AutoRS VNA** — obsługa analizatora Rohde & Schwarz ZVL-13 przez sieć LAN
+- **AutoNanoVNA** — obsługa analizatorów NanoVNA przez emulowany port szeregowy USB;
+- **AutoRSVNA** — obsługa analizatora Rohde & Schwarz ZVL-13 przez sieć LAN
 
 Oba programy są uruchamiane z jednego, wspólnego **launchera AutoVNA**. Launcher pozwala wybrać właściwy moduł, sprawdza wymagane biblioteki Pythona i w razie potrzeby instaluje brakujące zależności przed uruchomieniem programu.
 
 Programy mają podobny interfejs oraz wspólny sposób pracy: połączenie z analizatorem, ustawienie zakresu, kalibracja, wykonanie pomiaru, analiza wykresów, automatyczny zapis danych i uruchamianie wtyczek.
 
-> **Auto NanoVNA:** wersja 1.0
-> **AutoRS VNA:** wersja 1.0
+> **AutoNanoVNA:** wersja 1.0
+> **AutoRSVNA:** wersja 1.0
 
 ---
 
@@ -36,18 +38,18 @@ Programy mają podobny interfejs oraz wspólny sposób pracy: połączenie z ana
 
 # 1. Opis ogólny
 
-AutoVNA służy do wykonywania, prezentowania i zapisywania pomiarów parametrów badanego obiektu. W zależności od wybranego analizatora program może obsługiwać:
+AutoVNA służy do wykonywania, prezentowania i zapisywania pomiarów parametrów S badanego obiektu. W zależności od wybranego analizatora program może obsługiwać:
 
 - **S11** - współczynnik odbicia na porcie 1;
 - **S21** - transmisję z portu 1 do portu 2;
-- **S12** - transmisję z portu 2 do portu 1 w Auto RS VNA;
-- **S22** - współczynnik odbicia na porcie 2 w Auto RS VNA.
+- **S12** - transmisję z portu 2 do portu 1 w AutoRSVNA;
+- **S22** - współczynnik odbicia na porcie 2 w AutoRSVNA.
 
 Program umożliwia między innymi:
 
 - wykonywanie pomiarów pojedynczych i ciągłych;
 - ustawianie zakresu częstotliwości i liczby punktów;
-- kalibrację OSLT
+- kalibrację OSLT;
 - wybór mierzonych parametrów S;
 - wyświetlanie modułu, fazy i wykresu Smitha;
 - obliczanie impedancji i VSWR;
@@ -63,15 +65,15 @@ Program umożliwia między innymi:
 
 # 2. Obsługiwane urządzenia
 
-## 2.1. Auto NanoVNA
+## 2.1. AutoNanoVNA
 
-Moduł Auto NanoVNA jest przeznaczony do analizatorów NanoVNA komunikujących się przez port USB CDC/COM.
+Moduł AutoNanoVNA jest przeznaczony do analizatorów NanoVNA komunikujących się przez port szeregowy USB CDC.
 
 Dokładna zgodność może zależeć od modelu NanoVNA i zastosowanego firmware. Przed rozpoczęciem długiej serii pomiarowej należy wykonać krótki test połączenia i zapisu danych.
 
-## 2.2. Auto RS VNA
+## 2.2. AutoRSVNA
 
-Moduł Auto RS VNA jest przeznaczony do analizatora Rohde & Schwarz ZVL-13
+Moduł AutoRSVNA jest przeznaczony do analizatora Rohde & Schwarz ZVL-13.
 
 Program obsługuje:
 
@@ -88,16 +90,20 @@ Po połączeniu program wysyła zapytanie:
 
 i sprawdza odpowiedź analizatora.
 
+Poniżej przedstawiono przykład działania AutoRSVNA z analizatorem Rohde & Schwarz ZVL-13. Oprogramowanie komunikuje się z analizatorem przez sieć LAN, konfiguruje pomiar i pobiera dane parametrów S wyświetlane w interfejsie AutoVNA.
+
+![ZVL-13](image/ZVL_test.jpg)
+
 ## 2.3. Porównanie modułów
 
-| Funkcja                         | Auto NanoVNA                     | Auto RS VNA |
+| Funkcja                         | AutoNanoVNA                     | AutoRSVNA |
 |---------------------------------|----------------------------------|-------------|
-| Połączenie USB/COM              | tak                              | nie         |
+| Połączenie USB/port szeregowy              | tak                              | nie         |
 | Połączenie LAN/TCP              | nie                              | tak         |
 | S11                             | tak                              | tak         |
 | S21                             | tak                              | tak         |
-| S12                             | nie; w S2P przyjmowane `S12 = S21` | tak         |
-| S22                             | nie; w S2P przyjmowane `S22 = S11` | tak         |
+| S12                             | nie; w plikach S2P przyjmowane `S12 = S21` w celu zachowania zgodności | tak         |
+| S22                             | nie; w plikach S2P przyjmowane `S22 = S11` w celu zachowania zgodności | tak         |
 | Kalibracja po stronie komputera | tak                              | nie         |
 | Kalibracja wykonywana przez VNA | nie                              | tak         |
 | Terminal SCPI                   | nie                              | tak         |
@@ -195,14 +201,14 @@ chmod +x AutoVNA.sh
 
 ## 5.2. Panel połączenia
 
-### Auto NanoVNA
+### AutoNanoVNA
 
 1. Podłącz NanoVNA przewodem USB z transmisją danych.
 2. Kliknij **Odśwież porty**.
 3. Wybierz właściwy port COM.
 4. Kliknij **Połącz**.
 
-### Auto RS VNA
+### AutoRSVNA
 
 1. Podłącz komputer i analizator do tej samej sieci LAN.
 2. Odczytaj adres IP ZVL-13.
@@ -231,14 +237,14 @@ Zmiana zakresu częstotliwości lub liczby punktów może wymagać wykonania now
 
 ## 5.4. Wybór parametrów S
 
-### Auto NanoVNA
+### AutoNanoVNA
 
 Dostępne są:
 
 - S11;
 - S21.
 
-### Auto RS VNA
+### AutoRSVNA
 
 Dostępne są:
 
@@ -257,7 +263,7 @@ Główne przyciski pomiarowe mogą obejmować:
 - **Stop** - zatrzymanie cyklicznego odświeżania;
 - **Pojedynczy pomiar** - pobranie jednego kompletnego zestawu danych;
 
-Zatrzymanie odświeżania w GUI nie zawsze oznacza zatrzymanie wewnętrznego sweepu fizycznego analizatora. W Auto RS VNA program może nadal pozostawić analizator w trybie `INIT:CONT ON`.
+Zatrzymanie odświeżania w GUI nie zawsze oznacza zatrzymanie wewnętrznego sweepu fizycznego analizatora. W AutoRSVNA program może nadal pozostawić analizator w trybie `INIT:CONT ON`.
 
 ## 5.6. Wykres modułu i fazy
 
@@ -360,9 +366,9 @@ d = c · VF · t / 2
 
 TDR w programie jest wynikiem przekształcenia matematycznego i nie zastępuje dedykowanego reflektometru czasu rzeczywistego.
 
-## 5.14. Terminal SCPI w Auto RS VNA
+## 5.14. Terminal SCPI w AutoRSVNA
 
-Auto RS VNA posiada terminal umożliwiający ręczne wysyłanie komend SCPI.
+AutoRSVNA posiada terminal umożliwiający ręczne wysyłanie komend SCPI.
 
 Przykłady:
 
@@ -392,9 +398,9 @@ Wybrane ustawienia są zapisywane w konfiguracji użytkownika.
 
 Kalibrację należy wykonać dla przewodów, przejściówek i zakresu częstotliwości używanego podczas właściwego pomiaru.
 
-## 6.1. Kalibracja Auto NanoVNA
+## 6.1. Kalibracja AutoNanoVNA
 
-Kalibracja jest wykonywana po stronie komputera na podstawie danych pomiarowych odebranych z NanoVNA.
+Kalibracja jest wykonywana po stronie komputera na podstawie danych pomiarowych odebranych z NanoVNA, chyba że wcześniej wykonano kalibrację sprzętową bezpośrednio w NanoVNA (patrz 6.1.1).
 
 Dla **S11** stosowana jest jednoportowa kalibracja OSL wykorzystująca następujące wzorce:
 
@@ -445,9 +451,13 @@ Profil kalibracyjny jest powiązany z:
 
 Współczynniki kalibracyjne są wyznaczane osobno dla każdego punktu częstotliwości. Z tego powodu zmiana zakresu częstotliwości lub liczby punktów wymaga ponownego wykonania kalibracji.
 
-## 6.2. Kalibracja Auto RS VNA
+## 6.1.1. Kalibracja sprzętowa NanoVNA
 
-Auto RS VNA uruchamia procedury kalibracyjne realizowane przez analizator ZVL-13.
+Kalibrację można również wykonać bezpośrednio w NanoVNA, korzystając z jego wbudowanej procedury. W takim przypadku nie ma potrzeby wykonywania dodatkowej kalibracji w AutoNanoVNA, ponieważ dane odbierane przez AutoNanoVNA są już skorygowane przez urządzenie.
+
+## 6.2. Kalibracja AutoRSVNA
+
+AutoRSVNA uruchamia procedury kalibracyjne realizowane przez analizator ZVL-13.
 
 | Procedura               | Standardy                   | Główne zastosowanie |
 |-------------------------|-----------------------------|---------------------|
@@ -458,12 +468,19 @@ Auto RS VNA uruchamia procedury kalibracyjne realizowane przez analizator ZVL-13
 
 Podczas kalibracji program może tymczasowo zatrzymać sweep ciągły. Po zakończeniu, anulowaniu lub błędzie powinien przywrócić wcześniejszy stan pomiaru.
 
-## 6.3. Dobre praktyki kalibracji
+## 6.3. Weryfikacja kalibracji
+
+Kalibrację AutoVNA zweryfikowano za pomocą dwóch niezależnych testów. Zmierzono obciążenie 50 Ω i porównano wynik z pomiarem uzyskanym za pomocą analizatora Rohde & Schwarz ZVL-13. W osobnym teście zmierzono antenę dipolową, porównując kalibrację wykonywaną po stronie komputera w AutoVNA z kalibracją sprzętową analizatora. Wyniki przedstawiono poniżej.
+
+![Smith](image/smith_chart_.png)![Dipol](image/calibration_dipol.png)
+
+## 6.4. Dobre praktyki kalibracji
 
 - nie zmieniaj przewodów po wykonaniu kalibracji;
 - nie poruszaj złączami podczas pomiaru;
 - dokręcaj złącza z odpowiednią siłą;
 - używaj właściwego zestawu standardów;
+- jeżeli kalibrację wykonano bezpośrednio w NanoVNA, dodatkowa kalibracja po stronie komputera nie jest wymagana, ponieważ AutoNanoVNA pobiera dane po zastosowaniu kalibracji urządzenia;
 - wykonaj ponowną kalibrację po zmianie zakresu;
 - przed długą serią sprawdź wynik na znanym obciążeniu.
 
@@ -528,7 +545,7 @@ Warunek może dotyczyć między innymi:
 
 - wartości S11;
 - wartości S21;
-- S12 lub S22 w Auto RS VNA;
+- S12 lub S22 w AutoRSVNA;
 - impedancji;
 - VSWR;
 - wartości markera;
@@ -601,7 +618,7 @@ Przed odłączeniem analizatora lub urządzenia zewnętrznego należy najpierw z
 
 # 8. Sterowanie pomiarem z kodu Python
 
-Protokół jest dostępny w obu wersjach programu. Dla zgodności ze starszymi skryptami komendy zachowują prefiks `nano...`, również w Auto RS VNA.
+Protokół jest dostępny w obu wersjach programu. Dla zgodności ze starszymi skryptami komendy zachowują prefiks `nano...`, również w AutoRSVNA.
 
 ## 8.1. Zapis aktualnego pomiaru
 
@@ -625,7 +642,7 @@ Komenda nie wymusza natychmiast nowego sweepu. Kod powinien:
 print("nanoDataMem", flush=True)
 ```
 
-W Auto NanoVNA kopiowane są dostępne S11 i S21. W Auto RS VNA do pamięci mogą zostać skopiowane S11, S21, S12 i S22.
+W AutoNanoVNA kopiowane są dostępne S11 i S21. W AutoRSVNA do pamięci mogą zostać skopiowane S11, S21, S12 i S22.
 
 ## 8.3. Zmiana zakresu
 
@@ -645,14 +662,14 @@ GHz
 
 ## 8.4. Wybór pól CSV
 
-### Przykład dla Auto NanoVNA
+### Przykład dla AutoNanoVNA
 
 ```python
 print("nanoCSV-s11-s21-zs11-memory", flush=True)
 print("nanoOK_1|name=measurement001", flush=True)
 ```
 
-### Przykład dla Auto RS VNA
+### Przykład dla AutoRSVNA
 
 ```python
 print("nanoCSV-s11-s21-s12-s22-memory", flush=True)
@@ -665,8 +682,8 @@ Przykładowe komendy:
 |---------|---------------------------------|
 | `s11`     | S11 w dB i fazie                |
 | `s21`     | S21 w dB i fazie                |
-| `s12`     | S12 w dB i fazie w Auto RS VNA  |
-| `s22`     | S22 w dB i fazie w Auto RS VNA  |
+| `s12`     | S12 w dB i fazie w AutoRSVNA  |
+| `s22`     | S22 w dB i fazie w AutoRSVNA  |
 | `s11ri`   | część rzeczywista i urojona S11 |
 | `s21ri`   | część rzeczywista i urojona S21 |
 | `s12ri`   | część rzeczywista i urojona S12 |
@@ -687,7 +704,7 @@ print("nanoOK_2|name=antenna001", flush=True)
 
 ## 8.6. Zapis S2P
 
-### Auto NanoVNA
+### AutoNanoVNA
 
 ```python
 print("nanoS2P-s11-s21", flush=True)
@@ -701,7 +718,7 @@ S12 = S21
 S22 = S11
 ```
 
-### Auto RS VNA
+### AutoRSVNA
 
 ```python
 print("nanoS2P-s11-s21-s12-s22", flush=True)
@@ -846,7 +863,7 @@ if __name__ == "__main__":
 
 # 9. Wtyczki
 
-Wtyczki są zewnętrznymi plikami Python `.py`, które otrzymują aktualny pomiar i mogą wykonać dodatkową analizę.
+System wtyczek jest niezależny od mechanizmu automatyzacji pomiarów. Automatyzacja steruje przebiegiem pomiaru, w tym pomiarami czasowymi, wyzwalaniem warunkowym oraz współpracą z urządzeniami zewnętrznymi za pomocą kodu Python. Wtyczki są implementowane jako oddzielne pliki Python `.py` i służą do dodatkowego przetwarzania oraz analizy już pozyskanych danych pomiarowych. Każda wtyczka otrzymuje na wejściu migawkę CSV aktualnego pomiaru.
 
 ## 9.1. Oddzielna instalacja dla obu modułów
 
@@ -859,7 +876,7 @@ AUTO_RS_VNA/plugins/
 
 Wtyczkę przeznaczoną dla obu wersji trzeba skopiować osobno do obu katalogów. Po dodaniu lub usunięciu pliku kliknij w danym programie **Odśwież wtyczki**.
 
-Dodanie wtyczki tylko do Auto NanoVNA nie powoduje jej pojawienia się w Auto RS VNA i odwrotnie.
+Dodanie wtyczki tylko do AutoNanoVNA nie powoduje jej pojawienia się w AutoRSVNA i odwrotnie.
 
 ## 9.2. Sposób uruchamiania wtyczki
 
@@ -872,7 +889,7 @@ Program uruchamia wtyczkę jako oddzielny proces i przekazuje dwa argumenty:
 
 Przed uruchomieniem wtyczki program tworzy spójny snapshot bieżącego pomiaru. Wtyczka odczytuje dane z pliku wejściowego i zapisuje wyniki w katalogu wyjściowym.
 
-## 9.3. Przykład minimalnej wtyczka
+## 9.3. Przykład minimalnej wtyczki
 
 ```python
 import argparse
@@ -900,8 +917,8 @@ Wtyczka powinna sprawdzać, jakie kolumny znajdują się w otrzymanym CSV.
 
 Należy pamiętać, że:
 
-- Auto NanoVNA dostarcza bezpośrednio głównie S11 i S21;
-- Auto RS VNA może dostarczać S11, S21, S12 i S22;
+- AutoNanoVNA dostarcza bezpośrednio głównie S11 i S21;
+- AutoRSVNA może dostarczać S11, S21, S12 i S22;
 - zestaw kolumn zależy od ustawień zapisu;
 - nazwy dodatkowych kolumn mogą zależeć od modułu;
 - wtyczka wymagająca S12 albo S22 nie zadziała z rzeczywistymi danymi NanoVNA bez zastosowania dodatkowych założeń.
@@ -986,7 +1003,7 @@ marker:M1
 marker:M2
 ```
 
-W Auto RS VNA mogą być również zapisane dane S12 i S22.
+W AutoRSVNA mogą być również zapisane dane S12 i S22.
 
 Opcjonalnie można zapisać:
 
@@ -1010,9 +1027,9 @@ Standardowa kolejność danych:
 S11, S21, S12, S22
 ```
 
-Auto RS VNA może zapisać wszystkie cztery rzeczywiście zmierzone parametry po ich włączeniu.
+AutoRSVNA może zapisać wszystkie cztery rzeczywiście zmierzone parametry po ich włączeniu.
 
-W Auto NanoVNA przyjmowane jest:
+W AutoNanoVNA stosowane są następujące założenia w celu zachowania zgodności z danymi eksportowanymi przez AutoRSVNA:
 
 ```text
 S12 = S21
@@ -1041,7 +1058,7 @@ Przed zapisaniem raportu warto sprawdzić, czy wszystkie potrzebne wykresy są w
 
 Pliki pomiarowe, raporty i wyniki wtyczek są zapisywane w folderze wybranym przez użytkownika.
 
-## 11.1. Konfiguracja Auto NanoVNA
+## 11.1. Konfiguracja AutoNanoVNA
 
 Windows:
 
@@ -1063,7 +1080,7 @@ automation_code.py
 calibrations/
 ```
 
-## 11.2. Konfiguracja Auto RS VNA
+## 11.2. Konfiguracja AutoRSVNA
 
 Windows:
 
@@ -1088,11 +1105,11 @@ Tryb DEMO pozwala uruchomić interfejs bez fizycznego analizatora.
 Aby go uruchomić:
 
 1. uruchom wspólny launcher;
-2. wybierz Auto NanoVNA albo Auto RS VNA;
+2. wybierz AutoNanoVNA albo AutoRSVNA;
 3. w polu urządzenia wybierz pozycję `DEMO` lub wpisz `demo`;
 4. kliknij **Połącz**.
 
-W Auto NanoVNA wpis `DEMO` zastępuje port COM. W Auto RS VNA zastępuje adres IP analizatora.
+W AutoNanoVNA wpis `DEMO` zastępuje port COM. W AutoRSVNA zastępuje adres IP analizatora.
 
 Tryb demonstracyjny służy do:
 
@@ -1118,14 +1135,7 @@ Tryb DEMO nie zastępuje testu z fizycznym analizatorem i nie służy do oceny d
 
 ## 13.2. Biblioteki nie instalują się automatycznie
 
-Spróbuj ręcznie:
-
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-Jeżeli moduły mają osobne pliki zależności:
+Spróbuj zainstalować je ręcznie:
 
 ```bash
 pip install -r AUTO_NanoVNA/requirements.txt
@@ -1167,7 +1177,7 @@ Sprawdź:
 - poczekaj na zakończenie pierwszego przebiegu;
 - wykonaj ponowny pomiar;
 - sprawdź wybrane parametry S;
-- w Auto RS VNA odczytaj kolejkę błędów przez `SYSTem:ERRor?`.
+- w AutoRSVNA odczytaj kolejkę błędów przez `SYSTem:ERRor?`.
 
 ## 13.7. Kod Python nie zapisuje pomiaru
 
@@ -1182,7 +1192,7 @@ Tekst wpisany ręcznie w osobnym terminalu nie jest odbierany przez aplikację.
 ## 13.8. Wtyczka nie pojawia się w programie
 
 - sprawdź katalog `plugins/` właściwego modułu;
-- pamiętaj, że wtyczkę instaluje się osobno dla Auto NanoVNA i Auto RS VNA;
+- pamiętaj, że wtyczkę instaluje się osobno dla AutoNanoVNA i AutoRSVNA;
 - kliknij **Odśwież wtyczki**;
 - sprawdź rozszerzenie `.py`;
 - sprawdź log uruchomienia.
@@ -1201,7 +1211,7 @@ Tekst wpisany ręcznie w osobnym terminalu nie jest odbierany przez aplikację.
 - AutoVNA nie jest certyfikowanym systemem metrologicznym;
 - program nie jest uniwersalnym sterownikiem wszystkich analizatorów VNA;
 - zgodność NanoVNA zależy od modelu i firmware;
-- opisana wersja Auto RS VNA jest przeznaczona dla ZVL-13.
+- opisana wersja AutoRSVNA jest przeznaczona dla ZVL-13.
 - kalibracja host-side NanoVNA jest uproszczona;
 - S2P NanoVNA korzysta z założenia symetrii i wzajemności;
 - TDR zależy od pasma, liczby punktów, okna i współczynnika `VF`;

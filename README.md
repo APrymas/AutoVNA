@@ -4,15 +4,15 @@
 
 **AutoVNA** is a shared package containing two desktop applications designed to operate vector network analyzers:
 
-- **Auto NanoVNA** — support for NanoVNA analyzers through USB and a COM port;
-- **AutoRS VNA** — support for the Rohde & Schwarz ZVL-13 analyzer through LAN.
+- **AutoNanoVNA** — support for NanoVNA analyzers through an USB emulated serial port;
+- **AutoRSVNA** — support for the Rohde & Schwarz ZVL-13 analyzer through LAN.
 
 Both applications are launched from one shared **AutoVNA launcher**. The launcher allows the user to select the required module, checks the required Python libraries, and installs missing dependencies before starting the application when necessary.
 
 The applications have a similar interface and a common workflow: connecting to the analyzer, setting the frequency range, calibration, performing measurements, analyzing plots, automatically saving data, and running plugins.
 
-> **Auto NanoVNA:** version 1.0  
-> **AutoRS VNA:** version 1.0
+> **AutoNanoVNA:** version 1.0  
+> **AutoRSVNA:** version 1.0
 
 ---
 
@@ -65,15 +65,15 @@ The application provides, among other features:
 
 # 2. Supported devices
 
-## 2.1. Auto NanoVNA
+## 2.1. AutoNanoVNA
 
-The Auto NanoVNA module is intended for NanoVNA analyzers communicating through USB CDC/COM.
+The AutoNanoVNA module is intended for NanoVNA analyzers communicating through USB CDC serial port.
 
 Exact compatibility may depend on the NanoVNA model and firmware. Before starting a long measurement series, perform a short connection and data-saving test.
 
-## 2.2. Auto RS VNA
+## 2.2. AutoRSVNA
 
-The Auto RS VNA module is intended for the Rohde & Schwarz ZVL-13 analyzer.
+The AutoRSVNA module is intended for the Rohde & Schwarz ZVL-13 analyzer.
 
 The application supports:
 
@@ -90,25 +90,29 @@ After connecting, the application sends the following query:
 
 and verifies the analyzer response.
 
+An example of AutoRSVNA operating with a Rohde & Schwarz ZVL-13 analyzer is shown below. The software communicates with the analyzer over LAN, configures the measurement, and acquires S-parameter data displayed in the AutoVNA interface.
+
+![ZVL-13](image/ZVL_test.jpg)
+
 ## 2.3. Module comparison
 
-| Function                         | Auto NanoVNA                          | Auto RS VNA |
-|----------------------------------|---------------------------------------|-------------|
-| USB/COM connection               | yes                                   | no          |
-| LAN/TCP connection               | no                                    | yes         |
-| S11                              | yes                                   | yes         |
-| S21                              | yes                                   | yes         |
-| S12                              | no; `S12 = S21` is assumed in S2P files | yes         |
-| S22                              | no; `S22 = S11` is assumed in S2P files | yes         |
-| Host-side calibration            | yes                                   | no          |
-| Calibration performed by the VNA | no                                    | yes         |
-| SCPI terminal                    | no                                    | yes         |
-| Automatic measurements           | yes                                   | yes         |
-| Python code control              | yes                                   | yes         |
-| CSV / S1P / S2P / PDF            | yes                                   | yes         |
-| TDR                              | yes                                   | yes         |
-| Plugins                          | yes                                   | yes         |
-| DEMO mode                        | yes                                   | yes         |
+| Function                         | AutoNanoVNA                                                                               | AutoRSVNA |
+|----------------------------------|-------------------------------------------------------------------------------------------|-----------|
+|  USB/serial connection           |yes                                                                                       |       no    |
+| LAN/TCP connection               | no                                                                                        | yes       |
+| S11                              | yes                                                                                       | yes       |
+| S21                              | yes                                                                                       | yes       |
+| S12                              | no; `S12 = S21` is assumed in S2P files to maintain compatibility to maintain compatibility | yes       |
+| S22                              | no; `S22 = S11` is assumed in S2P files to maintain compatibility to maintain compatibility | yes       |
+| Host-side calibration            | yes                                                                                       | no        |
+| Calibration performed by the VNA | no                                                                                        | yes       |
+| SCPI terminal                    | no                                                                                        | yes       |
+| Automatic measurements           | yes                                                                                       | yes       |
+| Python code control              | yes                                                                                       | yes       |
+| CSV / S1P / S2P / PDF            | yes                                                                                       | yes       |
+| TDR                              | yes                                                                                       | yes       |
+| Plugins                          | yes                                                                                       | yes       |
+| DEMO mode                        | yes                                                                                       | yes       |
 
 ---
 
@@ -197,14 +201,14 @@ chmod +x AutoVNA.sh
 
 ## 5.2. Connection panel
 
-### Auto NanoVNA
+### AutoNanoVNA
 
 1. Connect the NanoVNA using a USB cable that supports data transmission.
 2. Click **Refresh ports**.
 3. Select the correct COM port.
 4. Click **Connect**.
 
-### Auto RS VNA
+### AutoRSVNA
 
 1. Connect the computer and analyzer to the same LAN.
 2. Read the IP address of the ZVL-13.
@@ -233,14 +237,14 @@ Changing the frequency range or the number of points may require a new calibrati
 
 ## 5.4. Selecting S-parameters
 
-### Auto NanoVNA
+### AutoNanoVNA
 
 Available parameters:
 
 - S11;
 - S21.
 
-### Auto RS VNA
+### AutoRSVNA
 
 Available parameters:
 
@@ -259,7 +263,7 @@ The main measurement buttons may include:
 - **Stop** - stops periodic GUI updates;
 - **Single measurement** - reads one complete data set.
 
-Stopping GUI updates does not always stop the internal sweep of the physical analyzer. In Auto RS VNA, the analyzer may remain in `INIT:CONT ON` mode.
+Stopping GUI updates does not always stop the internal sweep of the physical analyzer. In AutoRSVNA, the analyzer may remain in `INIT:CONT ON` mode.
 
 ## 5.6. Magnitude and phase plots
 
@@ -362,9 +366,9 @@ d = c · VF · t / 2
 
 TDR in the application is the result of a mathematical transformation and does not replace a dedicated real-time time-domain reflectometer.
 
-## 5.14. SCPI terminal in Auto RS VNA
+## 5.14. SCPI terminal in AutoRSVNA
 
-Auto RS VNA includes a terminal for manually sending SCPI commands.
+AutoRSVNA includes a terminal for manually sending SCPI commands.
 
 Examples:
 
@@ -375,14 +379,14 @@ INITiate:CONTinuous?
 SENSe1:FREQuency:STARt?
 ```
 
-A single line should contain no more than one query ending with `?`. This prevents multiple responses from remaining in the TCP queue.
+A single line should contain no more than one query ending with `?`. This prevents multiple responses from being stored in the TCP queue.
 
 ## 5.15. Language and theme
 
 The application supports:
 
-- Polish;
-- English;
+- Polish language;
+- English language;
 - light theme;
 - dark theme.
 
@@ -394,9 +398,9 @@ The selected settings are stored in the user configuration.
 
 Calibration should be performed with the cables, adapters, and frequency range that will be used during the actual measurement.
 
-## 6.1. Auto NanoVNA calibration
+## 6.1. AutoNanoVNA calibration
 
-Calibration is performed on the computer side using measurement data received from the NanoVNA.
+Calibration is performed on the computer side using measurement data received from the NanoVNA, unless the hardware-side calibration on NanoVNA has been already performed (see 6.1.1).
 
 For **S11**, a one-port OSL calibration is used with the following standards:
 
@@ -447,9 +451,13 @@ The calibration profile is associated with:
 
 The calibration coefficients are calculated separately for every frequency point. Therefore, changing the frequency range or the number of sweep points requires recalibration.
 
-## 6.2. Auto RS VNA calibration
+## 6.1.1. Hardware NanoVNA calibration
 
-Auto RS VNA starts calibration procedures performed by the ZVL-13 analyzer.
+The calibration can be also performed on the NanoVNA itself, using its built-in procedure. There is no need to perform the AutoNanoVNA calibration in that case, since the data received by AutoNanoVNA in that case are already corrected.
+
+## 6.2. AutoRSVNA calibration
+
+AutoRSVNA starts calibration procedures performed by the ZVL-13 analyzer.
 
 | Procedure               | Standards                         | Main use           |
 |-------------------------|-----------------------------------|--------------------|
@@ -460,12 +468,19 @@ Auto RS VNA starts calibration procedures performed by the ZVL-13 analyzer.
 
 During calibration, the application may temporarily stop the continuous sweep. After completion, cancellation, or an error, it should restore the previous measurement state.
 
-## 6.3. Calibration best practices
+## 6.3 Calibration verification
+
+The AutoVNA calibration was verified using two separate tests. A 50 Ω load was measured and compared with the result obtained using a Rohde & Schwarz ZVL-13 analyzer. In a separate test, a dipole antenna was measured using AutoVNA computer-side calibration and compared with the result obtained using the analyzer’s hardware calibration. The results are presented below.
+
+![Smith](image/smith_chart_.png)![Dipol](image/calibration_dipol.png)
+
+## 6.4. Calibration best practices
 
 - do not change cables after calibration;
 - do not move connectors during measurements;
 - tighten connectors with the correct torque;
 - use the correct calibration standards;
+- If the calibration has been performed directly on the NanoVNA device, additional host-side calibration is not required, because Auto NanoVNA retrieves measurement data after the device calibration has already been applied.
 - recalibrate after changing the frequency range;
 - before a long series, verify the result using a known load.
 
@@ -530,7 +545,7 @@ The condition may refer to:
 
 - S11 value;
 - S21 value;
-- S12 or S22 in Auto RS VNA;
+- S12 or S22 in AutoRSVNA;
 - impedance;
 - VSWR;
 - marker value;
@@ -603,7 +618,7 @@ Before disconnecting the analyzer or an external device, stop the automation fir
 
 # 8. Controlling measurements from Python code
 
-The protocol is available in both application versions. For compatibility with older scripts, the commands keep the `nano...` prefix, including in Auto RS VNA.
+The protocol is available in both application versions. For compatibility with older scripts, the commands keep the `nano...` prefix, even in AutoRSVNA.
 
 ## 8.1. Saving the current measurement
 
@@ -627,7 +642,7 @@ The command does not immediately force a new sweep. The code should:
 print("nanoDataMem", flush=True)
 ```
 
-In Auto NanoVNA, the available S11 and S21 data are copied. In Auto RS VNA, S11, S21, S12, and S22 can be copied to memory.
+In AutoNanoVNA, the available S11 and S21 data are copied. In Auto RS VNA, S11, S21, S12, and S22 can be copied to memory.
 
 ## 8.3. Changing the frequency range
 
@@ -647,14 +662,14 @@ GHz
 
 ## 8.4. Selecting CSV fields
 
-### Auto NanoVNA example
+### AutoNanoVNA example
 
 ```python
 print("nanoCSV-s11-s21-zs11-memory", flush=True)
 print("nanoOK_1|name=measurement001", flush=True)
 ```
 
-### Auto RS VNA example
+### AutoRSVNA example
 
 ```python
 print("nanoCSV-s11-s21-s12-s22-memory", flush=True)
@@ -689,7 +704,7 @@ print("nanoOK_2|name=antenna001", flush=True)
 
 ## 8.6. Saving S2P
 
-### Auto NanoVNA
+### AutoNanoVNA
 
 ```python
 print("nanoS2P-s11-s21", flush=True)
@@ -703,7 +718,7 @@ S12 = S21
 S22 = S11
 ```
 
-### Auto RS VNA
+### AutoRSVNA
 
 ```python
 print("nanoS2P-s11-s21-s12-s22", flush=True)
@@ -841,14 +856,13 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 ```
 
 ---
 
 # 9. Plugins
 
-Plugins are external Python `.py` files that receive the current measurement and can perform additional analysis.
+The plugin system is independent of the measurement automation mechanism. Automation controls the measurement workflow, including timed measurements, condition-based triggering, and interaction with external devices through Python code. Plugins are implemented as separate Python .py files and are used for additional processing and analysis of already acquired measurement data. Each plugin receives a CSV snapshot of the current measurement as its input.
 
 ## 9.1. Separate installation for both modules
 
@@ -861,7 +875,7 @@ AUTO_RS_VNA/plugins/
 
 A plugin intended for both versions must be copied separately to both directories. After adding or removing a file, click **Refresh plugins** in the relevant application.
 
-Adding a plugin only to Auto NanoVNA does not make it available in Auto RS VNA, and vice versa.
+Adding a plugin only to AutoNanoVNA does not make it available in AutoRSVNA, and vice versa.
 
 ## 9.2. How a plugin is started
 
@@ -902,8 +916,8 @@ A plugin should check which columns are present in the received CSV file.
 
 Keep in mind that:
 
-- Auto NanoVNA directly provides mainly S11 and S21;
-- Auto RS VNA can provide S11, S21, S12, and S22;
+- AutoNanoVNA directly provides mainly S11 and S21;
+- AutoRSVNA can provide S11, S21, S12, and S22;
 - the set of columns depends on the save settings;
 - additional column names may depend on the selected module;
 - a plugin requiring S12 or S22 will not work with real NanoVNA data without additional assumptions.
@@ -956,7 +970,6 @@ The example plugin analyzes the current S11 and S21 sweep. It searches for the l
 
 The plugin can be used as a simple starting point for developing custom measurement-analysis plugins.
 
-
 ## 9.6. Plugin security
 
 A plugin is executable Python code and runs with the permissions of the user who started the application.
@@ -988,7 +1001,7 @@ marker:M1
 marker:M2
 ```
 
-In Auto RS VNA, S12 and S22 data can also be saved.
+In AutoRSVNA, S12 and S22 data can also be saved.
 
 Optionally, the following data can be saved:
 
@@ -1012,9 +1025,9 @@ Standard data order:
 S11, S21, S12, S22
 ```
 
-Auto RS VNA can save all four actually measured parameters when they are enabled.
+AutoRSVNA can save all four actually measured parameters when they are enabled.
 
-In Auto NanoVNA, the following assumptions are used:
+In AutoNanoVNA, the following assumptions are used to preserve compatibility with AutoRSVNA export data:
 
 ```text
 S12 = S21
@@ -1043,7 +1056,7 @@ Before saving a report, verify that all required plots are visible and that a cu
 
 Measurement files, reports, and plugin results are saved in the directory selected by the user.
 
-## 11.1. Auto NanoVNA configuration
+## 11.1. AutoNanoVNA configuration
 
 Windows:
 
@@ -1065,7 +1078,7 @@ automation_code.py
 calibrations/
 ```
 
-## 11.2. Auto RS VNA configuration
+## 11.2. AutoRSVNA configuration
 
 Windows:
 
@@ -1090,11 +1103,11 @@ DEMO mode allows the interface to be started without a physical analyzer.
 To start it:
 
 1. start the shared launcher;
-2. select Auto NanoVNA or Auto RS VNA;
+2. select AutoNanoVNA or AutoRSVNA;
 3. select `DEMO` in the device field or enter `demo`;
 4. click **Connect**.
 
-In Auto NanoVNA, `DEMO` replaces the COM port. In Auto RS VNA, it replaces the analyzer IP address.
+In AutoNanoVNA, `DEMO` replaces the COM port. In AutoRSVNA, it replaces the analyzer IP address.
 
 Demo mode can be used to:
 
@@ -1177,7 +1190,7 @@ Text entered manually in a separate terminal is not received by the application.
 ## 13.8. A plugin does not appear in the application
 
 - check the `plugins/` directory of the correct module;
-- remember that plugins are installed separately for Auto NanoVNA and Auto RS VNA;
+- remember that plugins are installed separately for AutoNanoVNA and Auto RS VNA;
 - click **Refresh plugins**;
 - check that the file has the `.py` extension;
 - review the startup log.
@@ -1196,7 +1209,7 @@ Text entered manually in a separate terminal is not received by the application.
 - AutoVNA is not a certified metrological system;
 - the application is not a universal driver for all VNA analyzers;
 - NanoVNA compatibility depends on the model and firmware;
-- the described Auto RS VNA version is intended for the ZVL-13;
+- the described AutoRSVNA version is intended for the ZVL-13;
 - NanoVNA host-side calibration is simplified;
 - NanoVNA S2P export uses symmetry and reciprocity assumptions;
 - TDR depends on bandwidth, number of points, window, and `VF`;
