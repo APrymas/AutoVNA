@@ -105,7 +105,7 @@ An example of AutoRSVNA operating with a Rohde & Schwarz ZVL-13 analyzer is show
 | S12                              | no; `S12 = S21` is assumed in S2P files to maintain compatibility to maintain compatibility | yes       |
 | S22                              | no; `S22 = S11` is assumed in S2P files to maintain compatibility to maintain compatibility | yes       |
 | Host-side calibration            | yes                                                                                       | no        |
-| Calibration performed by the VNA | no                                                                                        | yes       |
+| Calibration performed by the VNA | yes, but not controlled by AutoNanoVNA                                                                                       | yes       |
 | SCPI terminal                    | no                                                                                        | yes       |
 | Automatic measurements           | yes                                                                                       | yes       |
 | Python code control              | yes                                                                                       | yes       |
