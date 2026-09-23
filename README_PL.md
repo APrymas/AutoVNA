@@ -105,7 +105,7 @@ Poniżej przedstawiono przykład działania AutoRSVNA z analizatorem Rohde & Sch
 | S12                             | nie; w plikach S2P przyjmowane `S12 = S21` w celu zachowania zgodności | tak         |
 | S22                             | nie; w plikach S2P przyjmowane `S22 = S11` w celu zachowania zgodności | tak         |
 | Kalibracja po stronie komputera | tak                              | nie         |
-| Kalibracja wykonywana przez VNA | nie                              | tak         |
+| Kalibracja wykonywana przez VNA | tak, ale nie jest kontrolowane przez AutoNanoVNA                              | tak         |
 | Terminal SCPI                   | nie                              | tak         |
 | Pomiary automatyczne            | tak                              | tak         |
 | Sterowanie kodem Python         | tak                              | tak         |
