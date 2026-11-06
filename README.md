@@ -32,7 +32,9 @@ The applications have a similar interface and a common workflow: connecting to t
 12. [Demo mode](#12-demo-mode)
 13. [Troubleshooting](#13-troubleshooting)
 14. [Limitations and safety](#14-limitations-and-safety)
-15. [License](#15-license)
+15. [Citation](#15-citation)
+16. [License](#16-license)
+
 
 ---
 
@@ -1228,6 +1230,27 @@ Before starting a long automatic series:
 
 ---
 
-# 15. License
+
+# 15. Citation
+
+If you use AutoVNA in your research, please cite the following publication:
+
+**DOI:** https://doi.org/10.1016/j.softx.2026.103202
+
+```bibtex
+@article{AutoVNA2026,
+    author  = {Prymas, Adrian and Górniak, Piotr and Klimaszewski, Krzysztof},
+    title   = {AutoVNA: Software for automated measurements using the low-cost NanoVNA network analyzer},
+    journal = {SoftwareX},
+    year    = {2026},
+    volume  = {36},
+    pages   = {103202},
+    doi     = {10.1016/j.softx.2026.103202},
+    url     = {https://doi.org/10.1016/j.softx.2026.103202}
+}
+```
+
+# 16. License
 
 BSD-3-Clause
+
