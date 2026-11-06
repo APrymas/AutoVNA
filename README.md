@@ -1233,7 +1233,7 @@ Before starting a long automatic series:
 
 # 15. Citation
 
-If you use AutoVNA in your research, please cite the following publication:
+If you use AutoVNA in your research, please cite the following publication: 
 
 **DOI:** https://doi.org/10.1016/j.softx.2026.103202
 
