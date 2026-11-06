@@ -5,7 +5,7 @@
 **AutoVNA** jest wspólnym pakietem dwóch aplikacji desktopowych przeznaczonych do obsługi wektorowych analizatorów sieci:
 
 - **AutoNanoVNA** — obsługa analizatorów NanoVNA przez emulowany port szeregowy USB;
-- **AutoRSVNA** — obsługa analizatora Rohde & Schwarz ZVL-13 przez sieć LAN
+- **AutoRSVNA** — obsługa analizatora Rohde & Schwarz ZVL-13 przez sieć LAN 
 
 Oba programy są uruchamiane z jednego, wspólnego **launchera AutoVNA**. Launcher pozwala wybrać właściwy moduł, sprawdza wymagane biblioteki Pythona i w razie potrzeby instaluje brakujące zależności przed uruchomieniem programu.
 
