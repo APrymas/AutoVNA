@@ -32,7 +32,9 @@ Programy mają podobny interfejs oraz wspólny sposób pracy: połączenie z ana
 12. [Tryb demonstracyjny](#12-tryb-demonstracyjny)
 13. [Rozwiązywanie problemów](#13-rozwi%C4%85zywanie-problem%C3%B3w)
 14. [Ograniczenia i bezpieczeństwo](#14-ograniczenia-i-bezpiecze%C5%84stwo)
-15. [Licencja](#15-licencja)
+15. [Cytowanie](#15-cytowanie)
+16. [Licencja](#16-licencja)
+
 
 ---
 
@@ -1230,6 +1232,26 @@ Przed uruchomieniem długiej serii automatycznej:
 
 ---
 
-# 15. Licencja
+# 15. Cytowanie
+
+Jeśli wykorzystujesz oprogramowanie AutoVNA w swoich badaniach, prosimy o zacytowanie poniższej publikacji:
+
+**DOI:** https://doi.org/10.1016/j.softx.2026.103202
+
+```bibtex
+@article{AutoVNA2026,
+    author  = {Prymas, Adrian and Górniak, Piotr and Klimaszewski, Krzysztof},
+    title   = {AutoVNA: Software for automated measurements using the low-cost NanoVNA network analyzer},
+    journal = {SoftwareX},
+    year    = {2026},
+    volume  = {36},
+    pages   = {103202},
+    doi     = {10.1016/j.softx.2026.103202},
+    url     = {https://doi.org/10.1016/j.softx.2026.103202}
+}
+```
+
+# 16. Licencja
 
 BSD-3-Clause
+
